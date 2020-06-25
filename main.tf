@@ -1,19 +1,37 @@
 provider "aws" {
 }
 
+data "aws_iam_policy_document" "bucket_policy" {
+  statement {
+
+    principals {
+      identifiers = ["*"]
+      type = "*"
+    }
+    effect = "Allow"
+
+    actions = [
+      "s3:GetObject",
+    ]
+
+    resources = [
+      "arn:aws:s3:::${var.name}/index.html",
+    ]
+  }
+}
+
 resource "aws_s3_bucket_object" "index_html" {
   bucket = aws_s3_bucket.aws_training.id
   key = "index.html"
-  content = "<h1>Hello, private bucket</h1>"
+  content = "<h1>Hello, public bucket</h1>"
   content_type = "text/html"
-  acl = "public-read"
-  cache_control = "max-age=604800"
 }
 
 resource "aws_s3_bucket" "aws_training" {
   bucket = var.name
 
-  acl = "private"
+  acl = "public-read"
+  policy        = data.aws_iam_policy_document.bucket_policy.json
 
   website {
     index_document = "index.html"
@@ -26,13 +44,4 @@ resource "aws_s3_bucket" "aws_training" {
     Project     = var.name
     username    = local.username
   }
-}
-
-resource "aws_s3_bucket_public_access_block" "private" {
-  bucket = aws_s3_bucket.aws_training.id
-
-  block_public_acls       = true
-  block_public_policy     = true
-  ignore_public_acls      = false
-  restrict_public_buckets = true
 }
